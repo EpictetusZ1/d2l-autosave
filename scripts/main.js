@@ -1,58 +1,77 @@
 
+// TODO: Once the "submit" action is taken, clear the local storage for that key
 
-
-
-const validateChanges = () => {
-    const feedbackTextarea = document.getElementById("feedbackText")
-    if (!feedbackTextarea) return
-
-    const savedFeedback = localStorage.getItem("feedback")
-    // parse each into JSONString for deep equality check
-    return JSON.stringify(feedbackTextarea.value) === JSON.stringify(savedFeedback)
-
+function createStatusIcon(wrapper) {
+    const statusIcon = document.createElement("img")
+    statusIcon.id = "status-icon"
+    statusIcon.title = "Saved"
+    statusIcon.src = "images/checkmark.svg"
+    wrapper.appendChild(statusIcon)
+    return statusIcon
 }
 
-function autosaveFeedback() {
-    const feedbackTextarea = document.getElementById("feedbackText")
-    if (!feedbackTextarea) return
+function setupWrapper(feedbackForm, feedbackTextarea) {
+    const wrapper = document.createElement("div")
+    wrapper.style.height = "25px"
+    wrapper.style.position = "relative"
+    wrapper.style.width = "100%"
+    wrapper.style.marginTop = "-35px"
+    feedbackForm.insertBefore(wrapper, feedbackTextarea.nextSibling)
+    return wrapper
+}
 
-    // Restore previous feedback if it exists
-    const savedFeedback = localStorage.getItem("feedback")
-    if (savedFeedback) {
-        feedbackTextarea.value = savedFeedback
-    }
+function debounceImmediate(func, delay, statusIcon) {
+    let debounceTimer
+    let isCooldown = false
+    return function() {
+        const context = this
+        const args = arguments
 
-    // Debounce function to limit how often a function can run
-    const debounce = (func, delay) => {
-        let debounceTimer
-        return function() {
-            const context = this
-            const args = arguments
-            clearTimeout(debounceTimer)
-            debounceTimer = setTimeout(() => func.apply(context, args), delay)
+        if (!isCooldown) {
+            statusIcon.src = "images/saving.svg"
+            isCooldown = true
         }
-    }
 
-    // Save feedback to localStorage whenever it changes, no more than once every 2 seconds
-    const saveFeedback = () => {
-        console.log("Saving feedback")
-        localStorage.setItem("feedback", feedbackTextarea.value)
-        console.log("Feedback in localStorage: ", localStorage.getItem("feedback"))
+        clearTimeout(debounceTimer)
+        debounceTimer = setTimeout(() => {
+            func.apply(context, args)
+            isCooldown = false
+            statusIcon.src = "images/checkmark.svg"
+        }, delay)
     }
+}
 
-    feedbackTextarea.addEventListener("input", debounce(saveFeedback, 2000))
+function saveFeedback(statusIcon, feedbackTextarea, hashId) {
+    const feedback = feedbackTextarea.value
+    localStorage.setItem(hashId, feedback)
+    const lastSavedTime = new Date().toLocaleTimeString()
+    localStorage.setItem(hashId + "_lastSavedTime", lastSavedTime)
+    statusIcon.title = "Last saved: " + lastSavedTime
+    console.log("Feedback saved at: " + lastSavedTime)
+}
+
+const hash = async (id, assignment, className) => {
+    const encoder = new TextEncoder()
+    const data = encoder.encode(`${id}-${assignment}-${className}`)
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("")
 }
 
 const getData = async () => {
     const name = document.getElementById("name") ? document.getElementById("name").innerText : ""
+    const assignment = document.getElementById("assignment") ? document.getElementById("assignment").innerText : ""
     const studentId = document.getElementById("studentId") ? document.getElementById("studentId").innerText : ""
     const className = document.getElementById("class") ? document.getElementById("class").innerText : ""
 
     if (name && studentId && className) {
+        const studentIdHash = await hash(studentId, assignment, className)
         return {
             name,
             studentId,
-            className
+            className,
+            assignment,
+            hashedId: studentIdHash
         }
     }
     //  TODO: Maybe error handling here
@@ -60,23 +79,36 @@ const getData = async () => {
 }
 
 // TODO: Need to check if the url matches the current page, or perhaps only allow this extension to run on bright space pages
-const main = async () => {
-    document.addEventListener("DOMContentLoaded", async () => {
-        const target = document.getElementById("feedbackForm")
-        if (!target) {
-            console.log("Feedback form not found")
-            return
-        }
+const autosaveFeedback = async () => {
+    const feedbackForm = document.getElementById("feedbackForm")
+    const feedbackTextarea = document.getElementById("feedbackText")
+    if (!feedbackForm || !feedbackTextarea) {
+        console.error("Form or textarea not found.")
+        return
+    }
+    const data = await getData()
+    if (!data) { // TODO: Error handling
+        console.log("Required data not found")
+        return
+    }
 
-        const data = await getData()
-        if (!data) {
-            console.log("Required data not found")
-            return
-        }
+    const wrapper = setupWrapper(feedbackForm, feedbackTextarea)
+    const statusIcon = createStatusIcon(wrapper)
 
-        autosaveFeedback()
-        console.log("Autosave activated")
-    })
+    // Restore saved feedback
+    const hashId = data.hashedId
+    const savedFeedback = localStorage.getItem(hashId)
+    if (savedFeedback) {
+        feedbackTextarea.value = savedFeedback
+        const lastSavedTime = localStorage.getItem(hashId + "_lastSavedTime") || "Not yet saved"
+        statusIcon.title = "Last saved: " + lastSavedTime
+    }
+
+    const debouncedSaveFeedback = debounceImmediate(() => saveFeedback(statusIcon, feedbackTextarea, hashId), 750, statusIcon)
+    feedbackTextarea.addEventListener("input", debouncedSaveFeedback)
+
+    // To handle programmatic updates:
+    feedbackTextarea.onchange = debouncedSaveFeedback
 }
 
-main()
+autosaveFeedback().then(r => console.log("Autosave activated"))

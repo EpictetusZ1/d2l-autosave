@@ -5,14 +5,12 @@ function incrementNumbers() {
     if (!feedbackTextarea) return
 
     const intervalId = setInterval(() => {
-        // append the text with a space then the next number
         feedbackTextarea.value += ` ${count}`
-
+        const event = new Event('input', { bubbles: true });
+        feedbackTextarea.dispatchEvent(event);  // Dispatch the event to trigger autosave
         count++
         if (count > 500) {
             clearInterval(intervalId)
         }
     }, 2000)
 }
-
-// document.addEventListener('DOMContentLoaded', incrementNumbers)
