@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "D2L Autosave",
+  "description": "Autosave edits to D2L assignment feedback",
+  "version": "1.0",
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": "images/checkmark.png"
+  },
+  "content_scripts": [
+    {
+      "js": ["scripts/main.js"],
+      "matches": [
+        "http://localhost/*"
+      ]
+    }
+  ]
+}

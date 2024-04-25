@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Assignment Feedback</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" src="scripts/mockInput.js" defer></script>
+</head>
+<body>
+<main>
+    <section class="assignment-details">
+        <h1>Assignment Title</h1>
+        <p>Due Date: 14 May 2024</p>
+    </section>
+
+    <section class="submission-details">
+        <h2>Student Submission</h2>
+        <ul>
+            <li id="name"><strong>Student Name:</strong> John Doe</li>
+            <li id="studentId"><strong>Student ID:</strong> 123456</li>
+            <li id="class"><strong>Class:</strong> English Literature</li>
+        </ul>
+        <div class="student-work">
+            <p>
+                In exploring the themes of power and ambition in Shakespeare’s "Macbeth," it becomes evident how these driving forces can lead to the downfall of even the noblest characters. Macbeth’s initial valor as a warrior for Scotland is quickly overshadowed by his escalating ambition, spurred on by the witches’ prophecy and his wife’s ruthless motivations. This ambition is his tragic flaw, painting a vivid picture of a hero’s descent into villainy as he murders King Duncan and secures the throne for himself.
+            </p>
+            <br/>
+            <p>
+                Furthermore, Shakespeare uses the symbol of blood to represent Macbeth’s guilt and the inescapable nature of his violent choices. After the murder of Duncan, Macbeth laments that not even "all great Neptune's ocean" could cleanse the blood from his hands, illustrating the deep psychological impact of his actions. This imagery not only heightens the dramatic tension but also serves as a critical reflection on the consequences of unchecked ambition and power in human affairs, themes that remain relevant in modern society.
+            </p>
+        </div>
+    </section>
+
+    <section class="feedback-form">
+        <h2>Provide Feedback</h2>
+        <button
+                onclick="incrementNumbers()"
+        >
+            Start mock data entry</button>
+        <form id="feedbackForm">
+            <label for="feedbackText">Feedback:</label>
+            <textarea id="feedbackText" name="feedback" placeholder="Type your feedback here..."></textarea>
+
+            <span>
+                <label for="score">Score:</label>
+                <input type="number" id="score" name="score" min="0" max="100">
+            </span>
+
+            <button type="submit">Submit Feedback</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>
