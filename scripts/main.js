@@ -1,6 +1,7 @@
 
 // TODO: Once the "submit" action is taken, clear the local storage for that key
-
+// TODO: Make GitHub pages for this extension
+// TODO: Post on FaceBook to see if any friends who are teachers would like to test this
 function createStatusIcon(wrapper) {
     const statusIcon = document.createElement("img")
     statusIcon.id = "status-icon"
@@ -111,4 +112,4 @@ const autosaveFeedback = async () => {
     feedbackTextarea.onchange = debouncedSaveFeedback
 }
 
-autosaveFeedback().then(r => console.log("Autosave activated"))
+autosaveFeedback().then(_ => console.log("Autosave activated"))

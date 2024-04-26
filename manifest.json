@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "D2L Autosave",
-  "description": "Autosave edits to D2L assignment feedback",
+  "name": "D2L BrightSpace Autosave",
+  "description": "Autosave edits to D2L Brightspace assignment feedback, never worry about accidentally losing your work again!",
   "version": "1.0",
+  "author": "EpictetusZ1",
   "action": {
     "default_popup": "popup/index.html",
     "default_icon": "images/checkmark.svg"
