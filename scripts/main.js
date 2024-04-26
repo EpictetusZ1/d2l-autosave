@@ -1,7 +1,34 @@
-
-// TODO: Once the "submit" action is taken, clear the local storage for that key
 // TODO: Make GitHub pages for this extension
 // TODO: Post on FaceBook to see if any friends who are teachers would like to test this
+
+
+/**
+ * Utilities
+ */
+function formatDate(date) {
+    return date.toLocaleTimeString()
+}
+
+function isExpired(date) {
+    return (new Date() - date) / (1000 * 60 * 60) >= 24
+}
+
+function getFeedbackData(hashId) {
+    const data = localStorage.getItem(hashId)
+    return data ? JSON.parse(data) : null
+}
+
+const hash = async (id, assignment, className) => {
+    const encoder = new TextEncoder()
+    const data = encoder.encode(`${id}-${assignment}-${className}`)
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("")
+}
+
+/**
+ * DOM manipulation
+ */
 function createStatusIcon(wrapper) {
     const statusIcon = document.createElement("img")
     statusIcon.id = "status-icon"
@@ -13,14 +40,14 @@ function createStatusIcon(wrapper) {
 
 function setupWrapper(feedbackForm, feedbackTextarea) {
     const wrapper = document.createElement("div")
-    wrapper.style.height = "25px"
-    wrapper.style.position = "relative"
-    wrapper.style.width = "100%"
-    wrapper.style.marginTop = "-35px"
+    wrapper.style.cssText = "height: 25px; position: relative; width: 100%; margin-top: -35px;"
     feedbackForm.insertBefore(wrapper, feedbackTextarea.nextSibling)
     return wrapper
 }
 
+/**
+ * Debouncing function
+ */
 function debounceImmediate(func, delay, statusIcon) {
     let debounceTimer
     let isCooldown = false
@@ -42,24 +69,33 @@ function debounceImmediate(func, delay, statusIcon) {
     }
 }
 
+/**
+ * Core functionalities
+ */
+function clearExpiredFeedback() {
+    Object.keys(localStorage).forEach(key => {
+        const feedbackData = getFeedbackData(key)
+        if (feedbackData && isExpired(new Date(feedbackData.lastSaved))) {
+            localStorage.removeItem(key)
+            console.log(`Removed expired feedback for key: ${key}`)
+        }
+    })
+}
+
 function saveFeedback(statusIcon, feedbackTextarea, hashId) {
     const feedback = feedbackTextarea.value
-    localStorage.setItem(hashId, feedback)
-    const lastSavedTime = new Date().toLocaleTimeString()
-    localStorage.setItem(hashId + "_lastSavedTime", lastSavedTime)
-    statusIcon.title = "Last saved: " + lastSavedTime
-    console.log("Feedback saved at: " + lastSavedTime)
+    const lastSavedTime = new Date()
+    const feedbackData = {
+        text: feedback,
+        lastSaved: lastSavedTime
+    }
+    localStorage.setItem(hashId, JSON.stringify(feedbackData))
+    clearExpiredFeedback()
+    statusIcon.title = "Last saved: " + formatDate(lastSavedTime)
+    console.log("Feedback saved at: " + formatDate(lastSavedTime))
 }
 
-const hash = async (id, assignment, className) => {
-    const encoder = new TextEncoder()
-    const data = encoder.encode(`${id}-${assignment}-${className}`)
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("")
-}
-
-const getData = async () => {
+const getPageData = async () => {
     const name = document.getElementById("name") ? document.getElementById("name").innerText : ""
     const assignment = document.getElementById("assignment") ? document.getElementById("assignment").innerText : ""
     const studentId = document.getElementById("studentId") ? document.getElementById("studentId").innerText : ""
@@ -75,41 +111,49 @@ const getData = async () => {
             hashedId: studentIdHash
         }
     }
-    //  TODO: Maybe error handling here
     return null
 }
 
-// TODO: Need to check if the url matches the current page, or perhaps only allow this extension to run on bright space pages
-const autosaveFeedback = async () => {
+function clearDataOnSubmit(form, data) {
+    form.addEventListener("submit", () => {
+        if (getFeedbackData(data.hashedId)) {
+            localStorage.removeItem(data.hashedId)
+            console.log("Removing data for:", data.hashedId)
+        }
+    })
+}
+
+/**
+ * Initialization
+ */
+async function autosaveFeedback() {
     const feedbackForm = document.getElementById("feedbackForm")
     const feedbackTextarea = document.getElementById("feedbackText")
     if (!feedbackForm || !feedbackTextarea) {
         console.error("Form or textarea not found.")
         return
     }
-    const data = await getData()
-    if (!data) { // TODO: Error handling
-        console.log("Required data not found")
+
+    const data = await getPageData()
+    if (!data) {
+        console.error("Required data not found")
         return
     }
 
+    clearDataOnSubmit(feedbackForm, data)
     const wrapper = setupWrapper(feedbackForm, feedbackTextarea)
     const statusIcon = createStatusIcon(wrapper)
-
-    // Restore saved feedback
     const hashId = data.hashedId
-    const savedFeedback = localStorage.getItem(hashId)
-    if (savedFeedback) {
-        feedbackTextarea.value = savedFeedback
-        const lastSavedTime = localStorage.getItem(hashId + "_lastSavedTime") || "Not yet saved"
-        statusIcon.title = "Last saved: " + lastSavedTime
+    const feedbackData = getFeedbackData(hashId)
+
+    if (feedbackData) {
+        feedbackTextarea.value = feedbackData.text
+        statusIcon.title = "Last saved: " + formatDate(new Date(feedbackData.lastSaved))
     }
 
     const debouncedSaveFeedback = debounceImmediate(() => saveFeedback(statusIcon, feedbackTextarea, hashId), 750, statusIcon)
     feedbackTextarea.addEventListener("input", debouncedSaveFeedback)
-
-    // To handle programmatic updates:
     feedbackTextarea.onchange = debouncedSaveFeedback
 }
 
-autosaveFeedback().then(_ => console.log("Autosave activated"))
+autosaveFeedback().then(() => console.log("Autosave initialized."))

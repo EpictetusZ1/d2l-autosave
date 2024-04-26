@@ -2,8 +2,20 @@
   "manifest_version": 3,
   "name": "D2L BrightSpace Autosave",
   "description": "Autosave edits to D2L Brightspace assignment feedback, never worry about accidentally losing your work again!",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "<all_urls>"
+  ],
+  "icons": {
+    "16": "images/checkmark-16.png",
+    "32": "images/checkmark-32.png",
+    "48": "images/checkmark-48.png",
+    "128": "images/checkmark-128.png"
+  },
   "version": "1.0",
-  "author": "EpictetusZ1",
+  "author": "75635917+EpictetusZ1@users.noreply.github.com",
   "action": {
     "default_popup": "popup/index.html",
     "default_icon": "images/checkmark.svg"
